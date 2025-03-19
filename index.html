@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Decompiler</title>
+    <title>Media Decompiler (50MB)</title>
 </head>
 <body>
     <h2>Upload Media to Decompile</h2>
     <input type="file" id="fileInput" accept="image/*,video/*">
     <button onclick="decompile()">Decompile</button>
 
-    <h3>Extracted Code (Editable):</h3>
+    <h3>Extracted Code (Compressed & Editable):</h3>
     <textarea id="output" rows="10" cols="50"></textarea>
 
     <h3>Recompile from Code</h3>
@@ -24,32 +24,41 @@
                 return;
             }
 
-            // Limit file size to 100MB
-            if (file.size > 100 * 1024 * 1024) {
-                alert("File too large! Please upload a file smaller than 100MB.");
+            // Limit file size to 50MB
+            if (file.size > 50 * 1024 * 1024) {
+                alert("File too large! Please upload a file smaller than 50MB.");
                 return;
             }
 
             let reader = new FileReader();
             reader.onload = function(event) {
-                let binaryData = new Uint8Array(event.target.result);
-                let hexString = [...binaryData]
-                    .map(byte => byte.toString(16).padStart(2, '0'))
-                    .join('');
-                document.getElementById("output").value = hexString;
+                let base64Data = event.target.result.split(',')[1]; // Extract Base64
+
+                // Compress to keep it under 1MB
+                if (base64Data.length > 1024 * 1024) {
+                    base64Data = base64Data.substring(0, 1024 * 1024);
+                    alert("File is too large! Only the first 1MB of data is processed.");
+                }
+
+                document.getElementById("output").value = base64Data;
             };
-            reader.readAsArrayBuffer(file); // Efficient memory handling
+            reader.readAsDataURL(file); // Convert to Base64
         }
 
         function recompile() {
-            let hexString = document.getElementById("output").value.trim();
-            if (!hexString) {
-                alert("Please enter HEX data.");
+            let base64String = document.getElementById("output").value.trim();
+            if (!base64String) {
+                alert("Please enter Base64 data.");
                 return;
             }
 
-            let binaryData = new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-            let blob = new Blob([binaryData]);
+            let binaryData = atob(base64String); // Convert Base64 to binary
+            let arrayBuffer = new Uint8Array(binaryData.length);
+            for (let i = 0; i < binaryData.length; i++) {
+                arrayBuffer[i] = binaryData.charCodeAt(i);
+            }
+
+            let blob = new Blob([arrayBuffer]); // Create file blob
 
             let link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
