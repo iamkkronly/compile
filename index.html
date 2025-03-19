@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Decompiler</title>
+</head>
+<body>
+    <h2>Upload Media to Decompile</h2>
+    <input type="file" id="fileInput" accept="image/*,video/*">
+    <button onclick="decompile()">Decompile</button>
+
+    <h3>Extracted Code:</h3>
+    <textarea id="output" rows="10" cols="50" readonly></textarea>
+
+    <h3>Modify & Recompile</h3>
+    <button onclick="recompile()">Recompile</button>
+
+    <script>
+        function decompile() {
+            let file = document.getElementById("fileInput").files[0];
+            if (!file) {
+                alert("Please upload a file.");
+                return;
+            }
+
+            let reader = new FileReader();
+            reader.onload = function(event) {
+                let binaryData = event.target.result;
+                let hexString = [...new Uint8Array(binaryData)]
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+                document.getElementById("output").value = hexString;
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function recompile() {
+            let hexString = document.getElementById("output").value;
+            let binaryData = new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+
+            let blob = new Blob([binaryData]);
+            let url = URL.createObjectURL(blob);
+
+            let link = document.createElement("a");
+            link.href = url;
+            link.download = "recompiled_file";
+            link.click();
+        }
+    </script>
+</body>
+</html>
