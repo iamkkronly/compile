@@ -24,34 +24,32 @@
                 return;
             }
 
-            // Limit file size to 1MB
-            if (file.size > 1024 * 1024) {
-                alert("File too large! Please upload a file smaller than 1MB.");
+            // Limit file size to 100MB
+            if (file.size > 100 * 1024 * 1024) {
+                alert("File too large! Please upload a file smaller than 100MB.");
                 return;
             }
 
             let reader = new FileReader();
             reader.onload = function(event) {
-                let base64Data = event.target.result.split(',')[1]; // Extract Base64
-                document.getElementById("output").value = base64Data;
+                let binaryData = new Uint8Array(event.target.result);
+                let hexString = [...binaryData]
+                    .map(byte => byte.toString(16).padStart(2, '0'))
+                    .join('');
+                document.getElementById("output").value = hexString;
             };
-            reader.readAsDataURL(file); // Convert to Base64
+            reader.readAsArrayBuffer(file); // Efficient memory handling
         }
 
         function recompile() {
-            let base64String = document.getElementById("output").value.trim();
-            if (!base64String) {
-                alert("Please enter Base64 data.");
+            let hexString = document.getElementById("output").value.trim();
+            if (!hexString) {
+                alert("Please enter HEX data.");
                 return;
             }
 
-            let binaryData = atob(base64String); // Convert Base64 to binary
-            let arrayBuffer = new Uint8Array(binaryData.length);
-            for (let i = 0; i < binaryData.length; i++) {
-                arrayBuffer[i] = binaryData.charCodeAt(i);
-            }
-
-            let blob = new Blob([arrayBuffer]); // Create file blob
+            let binaryData = new Uint8Array(hexString.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+            let blob = new Blob([binaryData]);
 
             let link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
